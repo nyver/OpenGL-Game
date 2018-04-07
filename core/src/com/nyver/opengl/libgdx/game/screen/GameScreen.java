@@ -4,29 +4,32 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.ScreenAdapter;
 import com.badlogic.gdx.assets.AssetManager;
 import com.badlogic.gdx.graphics.GL20;
-import com.badlogic.gdx.graphics.PerspectiveCamera;
+import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.g3d.Environment;
 import com.badlogic.gdx.graphics.g3d.ModelBatch;
 import com.badlogic.gdx.graphics.g3d.ModelInstance;
 import com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute;
 import com.badlogic.gdx.graphics.g3d.environment.DirectionalLight;
 import com.badlogic.gdx.utils.Array;
-import com.nyver.opengl.libgdx.game.model.ModelInstanceFactory;
+import com.nyver.opengl.libgdx.game.input.PlayerInputProcessor;
+import com.nyver.opengl.libgdx.game.model.InstanceFactory;
+import com.nyver.opengl.libgdx.game.model.Ship;
 
-public class MainMenu extends ScreenAdapter {
+public class GameScreen extends ScreenAdapter {
 
     private Environment environment;
-    private PerspectiveCamera camera;
+    private OrthographicCamera camera;
     private ModelBatch modelBatch;
-    private ModelInstanceFactory modelInstanceFactory;
+    private InstanceFactory instanceFactory;
+    private Ship player;
     private Array<ModelInstance> instances = new Array<ModelInstance>();
     private boolean loading = false;
 
     @Override
     public void show() {
         modelBatch = new ModelBatch();
-        modelInstanceFactory = new ModelInstanceFactory(new AssetManager());
-        modelInstanceFactory.load();
+        instanceFactory = new InstanceFactory(new AssetManager());
+        instanceFactory.load();
         loading = true;
 
         initEnvironment();
@@ -40,18 +43,21 @@ public class MainMenu extends ScreenAdapter {
     }
 
     private void initCamera() {
-        camera = new PerspectiveCamera(60, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
-        camera.position.set(7f, 7f, 7f);
+        camera = new OrthographicCamera(10f, 10f * Gdx.graphics.getWidth() / Gdx.graphics.getHeight());
+        camera.position.set(0, 0, -10);
         camera.lookAt(0,0,0);
-        camera.near = 1f;
-        camera.far = 300f;
         camera.update();
     }
 
     @Override
     public void render(float delta) {
-        if (loading && modelInstanceFactory.update()) {
-            instances.add(modelInstanceFactory.createShipInstance(0, 0, -5f));
+        if (loading && instanceFactory.update()) {
+            player = instanceFactory.createShip(0, - camera.viewportHeight / 2, 0);
+            instances.add(player);
+
+            PlayerInputProcessor inputProcessor = new PlayerInputProcessor(player);
+            Gdx.input.setInputProcessor(inputProcessor);
+            
             loading = false;
         }
 
@@ -67,6 +73,6 @@ public class MainMenu extends ScreenAdapter {
     public void dispose() {
         modelBatch.dispose();
         instances.clear();
-        modelInstanceFactory.dispose();
+        instanceFactory.dispose();
     }
 }
